@@ -1,32 +1,54 @@
 // @ts-check
 
 const express = require('express')
-const fs = require('fs')
+const bodyParser = require('body-parser')
+const userRouter = express.Router()
 
 const app = express()
+app.use(express.json())
 
 const PORT = 5000
 
-app.use('/', async (req, res, next) => {
-  const requestedAt = new Date()
+userRouter.get('/', (req, res) => {
+  res.send('user list')
+})
 
-  const fileContent = await fs.promises.readFile('.gitignore')
+const USERS = {
+  15: {
+    nickname: 'foo',
+  },
+}
 
-  console.log('Middleware 1')
+userRouter.param('id', (req, res, next, value) => {
+  console.log('id parameter', value)
   // @ts-ignore
-  req.requestedAt = requestedAt
-  // @ts-ignore
-  req.fileContent = fileContent
+  req.user = USERS[value]
   next()
 })
 
-/* 수많은 미들웨어들.. */
-
-app.use((req, res) => {
-  console.log('Middleware 2')
+userRouter.get('/:id', (req, res) => {
+  console.log('User info with ID')
   // @ts-ignore
-  res.send(`Requested at ${req.requestedAt}, ${req.fileContent}`)
+  res.send(req.user)
 })
+
+userRouter.post('/', (req, res) => {
+  // Register user
+  res.send('User registered.')
+})
+
+userRouter.post('/:id/nickname', (req, res) => {
+  // req.body: {"nickname": "bar"}
+  // @ts-ignore
+  const { user } = req
+  const { nickname } = req.body
+
+  user.nickname = nickname
+
+  res.send(`user nickname updated ${nickname}`)
+})
+
+app.use('/users', userRouter)
 
 app.listen(PORT, () => {
   console.log(`The Express server is listening at port: ${PORT}`)
